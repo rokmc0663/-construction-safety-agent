@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="건설안전관리">
+<meta name="theme-color" content="#17202a">
+<meta name="mobile-web-app-capable" content="yes">
+<title>건설업 중대재해 예방 통합 안전관리 에이전트</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif;background:#f4f6f8;color:#17202a}
+header{background:#17202a;color:white;padding:18px 20px;position:sticky;top:0;z-index:10}
+header h1{margin:0 0 5px;font-size:20px}header p{margin:0;font-size:12px;opacity:.8}
+.layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 78px)}
+nav{background:white;border-right:1px solid #ddd;padding:12px;overflow:auto}
+nav button{display:block;width:100%;border:0;background:white;text-align:left;padding:10px 12px;border-radius:8px;margin-bottom:3px;cursor:pointer}
+nav button.active,nav button:hover{background:#e9eef5;font-weight:700}
+main{padding:20px;max-width:1200px;width:100%;margin:auto}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button,.btn{border:0;border-radius:8px;padding:9px 13px;background:#2f6fed;color:#fff;cursor:pointer;font-weight:600}
+button.secondary{background:#657180}.danger{background:#c62828}.green{background:#238636}
+.card{background:white;border:1px solid #ddd;border-radius:12px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px #0000000b}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{font-size:12px;font-weight:700;display:block;margin-bottom:5px}input,select,textarea{width:100%;padding:9px;border:1px solid #cbd2d9;border-radius:7px;font:inherit;background:#fff}
+textarea{min-height:100px;resize:vertical}.full{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #d8dde3;padding:7px;vertical-align:top}th{background:#eef1f4}
+.badge{display:inline-block;padding:3px 7px;border-radius:99px;background:#eef1f4;font-size:11px}
+.small{font-size:11px;color:#667085}.stat{font-size:24px;font-weight:800}
+@media(max-width:800px){.layout{grid-template-columns:1fr}nav{display:flex;overflow:auto;border-right:0;border-bottom:1px solid #ddd}nav button{min-width:160px}.grid{grid-template-columns:1fr}}
+@media print{header,nav,.toolbar,.no-print{display:none!important}.layout{display:block}main{padding:0}.card{box-shadow:none;border:0}}
+</style>
+<style>
+html,body{min-height:100%;-webkit-text-size-adjust:100%;padding-top:env(safe-area-inset-top)}
+button,input,select,textarea{-webkit-appearance:none}
+button{touch-action:manipulation;min-height:42px}
+input,select,textarea{font-size:16px}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="건설안전관리">
+<meta name="theme-color" content="#17202a">
+<link rel="apple-touch-icon" href="icon.svg">
+</head>
+<body>
+<header><h1>건설업 중대재해 예방 통합 안전관리</h1><p>건설현장 위험성평가 · TBM · 점검 · 교육 · 작업허가 · 사고/개선조치 · 법적근거 · 이력관리</p></header>
+<div id="browserNotice" class="no-print" style="display:none;background:#fff3cd;border-bottom:1px solid #e7c65c;padding:10px 16px;font-size:13px">
+<b>iPad 사용 안내:</b> 파일 앱의 미리보기보다 <b>Safari에서 HTML을 실행</b>하면 가장 안정적입니다. 현재 브라우저에서도 작성 기능은 사용할 수 있습니다.
+</div>
+<div class="layout">
+<nav id="menu"></nav>
+<main>
+<div class="toolbar no-print">
+<button onclick="newForm()">새 작성</button><button class="green" onclick="completeForm()">작성 완료 → 이력 자동등록</button>
+<button onclick="printPDF()">PDF / 인쇄</button><button onclick="exportExcel()">Excel 내보내기</button>
+<button onclick="exportCSV()">Google Sheets용 CSV</button><button class="secondary" onclick="showHistory()">이력관리대장</button>
+<button class="secondary" onclick="backup()">데이터 백업</button><button class="secondary" onclick="restore()">데이터 복원</button>
+</div>
+<div id="app"></div>
+</main></div>
+
+<script>
+const forms=[
+["현장 기본정보","현장관리","공사명·현장명·공사기간·발주자·시공사·건설사업관리자 등"],
+["안전보건관리계획","안전보건관리체계","현장 안전보건 목표·조직·역할·예산·이행계획"],
+["안전보건 예산·실적","안전보건관리체계","안전관리비·산업안전보건관리비 등 계획 및 집행"],
+["유해·위험요인 발굴","위험성평가","공종별 유해·위험요인 발굴"],
+["위험성평가","위험성평가","위험성 결정·감소대책·이행확인"],
+["위험성평가 개선조치대장","위험성평가","위험성평가 결과의 조치·담당자·기한·완료 추적"],
+["TBM 활동일지","TBM","작업 전 위험요인·안전대책 공유 및 참석자 기록"],
+["안전점검 체크리스트","점검","현장 시설·작업·가설구조물·건설기계 점검"],
+["작업장 순회점검일지","점검","관리감독자 및 책임기술자 현장 순회점검"],
+["합동안전보건점검표","점검","원·하청 합동 안전보건점검"],
+["안전보건교육 계획","교육","정기·특별·채용·작업내용 변경 교육계획"],
+["안전보건교육일지","교육","교육 실시·교육내용·참석자 기록"],
+["안전작업허가서","고위험작업","화기·굴착·고소·밀폐·양중·해체 등"],
+["굴착·흙막이 작업허가","토공","굴착단계·흙막이·계측·지하매설물 관리"],
+["고소작업 허가서","고소작업","추락위험 작업·작업발판·안전대·난간 등"],
+["양중작업계획·허가서","양중작업","크레인·이동식크레인·인양물·신호수 관리"],
+["해체작업계획·허가서","해체작업","구조검토·해체순서·붕괴·비산·통제구역 관리"],
+["건설기계 관리대장","건설기계","굴착기·덤프트럭·크레인 등 검사·점검·조치"],
+["가설구조물 점검대장","가설구조물","비계·동바리·거푸집·흙막이 등 점검"],
+["보호구 지급대장","보호구","안전모·안전화·안전대 등 지급·교체"],
+["MSDS 관리대장","화학물질","도료·접착제·방수재 등 MSDS 관리"],
+["협력업체 안전평가","협력업체","하도급업체 안전관리 수준 평가"],
+["안전보건협의체 회의록","협력업체","도급·협력업체 안전보건 협의"],
+["비상연락망","비상대응","현장 비상연락 및 보고체계"],
+["비상대응훈련 결과","비상대응","화재·붕괴·감전·질식 등 비상훈련"],
+["아차사고 보고서","사고예방","Near Miss 발굴·원인·재발방지"],
+["산업재해 사고조사보고서","사고대응","재해 개요·원인·재발방지대책"],
+["중대재해 대응 기록","사고대응","초동조치·현장보존·보고·대응 기록"],
+["개선조치 결과보고서","개선조치","시정조치·담당자·기한·완료 확인"],
+["법적의무 이행점검표","법정관리","산업안전보건법 및 중대재해처벌법 관련 이행점검"],
+["도급·용역·위탁 안전관리","협력업체","도급인의 안전보건 확보조치 관리"],
+["월간 안전관리 실적","통계","TBM·점검·교육·위험성평가·개선조치 집계"],
+["건설현장 중대재해 예방 종합점검","종합점검","현장 안전보건관리체계 종합 자체점검"],
+["건설현장 안전관리 Dashboard","대시보드","위험성평가·TBM·점검·교육·개선조치 KPI"]
+];
+let current=0, history=[], draft={};
+const STORAGE_KEY="safety_history";
+function loadHistory(){
+  try{
+    const raw=window.localStorage ? localStorage.getItem(STORAGE_KEY) : null;
+    history=raw?JSON.parse(raw):[];
+    if(!Array.isArray(history)) history=[];
+  }catch(e){ history=[]; }
+}
+function saveHistory(){
+  try{ if(window.localStorage) localStorage.setItem(STORAGE_KEY,JSON.stringify(history)); }catch(e){}
+}
+loadHistory();
+
+function menu(){document.getElementById("menu").innerHTML=forms.map((f,i)=>`<button class="${i===current?'active':''}" onclick="selectForm(${i})">${String(i+1).padStart(2,"0")}. ${f[0]}</button>`).join("")}
+function selectForm(i){current=i;draft={};menu();render()}
+function field(k,label,type="text",full=false){
+return `<div class="${full?'full':''}"><label>${label}</label>${type==="textarea"?`<textarea id="${k}"></textarea>`:`<input id="${k}" type="${type}">`}</div>`
+}
+function render(){
+const f=forms[current];
+if(f[0]==="위험성평가"){
+document.getElementById("app").innerHTML=`
+<div class="card"><h2>위험성평가</h2>
+<p class="small">건설현장 공종별 유해·위험요인을 발굴하고 위험성 결정, 감소대책, 조치완료까지 관리합니다.</p>
+<div class="grid">
+${field("date","평가일","date")}${field("title","평가명")}
+${field("site","현장명 / 공사명")}${field("location","공종·핵심 위치/구역")}
+${field("work","세부 작업")}${field("manager","담당자 / 관리감독자")}
+${field("contractor","시공사 / 협력업체")}
+${field("risk","유해·위험요인","textarea",true)}
+${field("hazard","예상 재해형태","textarea")}
+${field("currentRisk","현재 위험성(빈도×강도)")}
+${field("measure","위험성 감소대책","textarea",true)}
+${field("afterRisk","개선 후 위험성")}
+${field("deadline","조치기한","date")}${field("result","조치결과","textarea")}
+${field("legal","법적근거","textarea",true)}
+</div></div>
+<div class="card"><h3>작성 순서</h3>
+<p class="small">① 공종/위치 → ② 세부작업 → ③ 유해·위험요인 → ④ 재해형태 → ⑤ 현재 위험성 → ⑥ 감소대책 → ⑦ 개선 후 위험성 → ⑧ 담당자·기한 → ⑨ 조치결과</p></div>`;
+document.getElementById("date").value=new Date().toISOString().slice(0,10);
+return;
+}
+document.getElementById("app").innerHTML=`
+<div class="card"><h2>${f[0]}</h2><p class="small">${f[2]}</p>
+<div class="grid">
+${field("date","작성일","date")}${field("title","제목")}
+${field("site","현장명 / 공사명")}${field("location","핵심 위치·구역")}
+${field("work","공종·작업")}${field("manager","담당자 / 관리감독자")}
+${field("contractor","시공사 / 협력업체")}
+${field("risk","주요 위험요인","textarea",true)}
+${field("measure","안전대책·개선조치","textarea",true)}
+${field("result","점검/조치 결과","textarea",true)}
+${field("legal","법적근거","textarea",true)}
+${field("remarks","비고","textarea",true)}
+</div></div>
+<div class="card"><h3>작성 안내</h3>
+<p class="small">① 건설현장명·공종·핵심 위치/구역을 기준으로 기록합니다. 날짜·제목·핵심 위치/구역은 이력관리대장 자동등록의 핵심값입니다. ② 「작성 완료」를 누르면 현재 서식의 주요정보와 작성내용이 이력에 기록됩니다. ③ PDF는 인쇄 대화상자에서 'PDF로 저장'을 선택할 수 있습니다. ④ Excel은 .xls 형식으로 저장되며 Excel에서 열 수 있습니다. ⑤ Google Sheets는 CSV를 내려받아 Google Sheets에서 가져오기 하면 됩니다. ⑥ iPad에서는 Safari 실행을 권장합니다.</p>
+</div>`;
+document.getElementById("date").value=new Date().toISOString().slice(0,10);
+}
+function values(){
+let keys=["date","title","site","location","work","manager","contractor","risk","hazard","currentRisk","measure","afterRisk","deadline","result","legal","remarks"];
+let o={}; keys.forEach(k=>o[k]=document.getElementById(k)?.value||""); return o;
+}
+function completeForm(){
+let v=values();
+if(!v.title){alert("제목을 입력해 주세요.");return}
+if(!v.location){alert("핵심 위치·구역을 입력해 주세요.");return}
+let rec={id:Date.now(),form:forms[current][0],category:forms[current][1],...v,completedAt:new Date().toLocaleString("ko-KR")};
+history.unshift(rec);saveHistory();
+alert("작성 완료되었습니다. 이력관리대장에 자동 등록했습니다.");
+}
+function newForm(){render()}
+function printPDF(){window.print()}
+function download(blob,name){let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function exportExcel(){
+let v=values(), f=forms[current], html=`<html><meta charset="UTF-8"><table border="1"><tr><th colspan="2">${f[0]}</th></tr>`;
+Object.entries(v).forEach(([k,val])=>html+=`<tr><td>${k}</td><td>${String(val).replace(/</g,"&lt;")}</td></tr>`);html+=`</table></html>`;
+download(new Blob([html],{type:"application/vnd.ms-excel"}),`${f[0]}_${v.date||"작성"}.xls`);
+}
+function csvCell(x){return `"${String(x??"").replace(/"/g,'""')}"`}
+function exportCSV(){
+let v=values(), rows=[["서식","작성일","제목","사업장/현장","핵심 위치·구역","공종·작업","담당자","주요 위험요인","안전대책·개선조치","점검/조치 결과","법적근거","비고"],[forms[current][0],v.date,v.title,v.site,v.location,v.work,v.manager,v.risk,v.measure,v.result,v.legal,v.remarks]];
+download(new Blob(["\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"}),`${forms[current][0]}_GoogleSheets.csv`);
+}
+function showHistory(){
+document.getElementById("app").innerHTML=`<div class="card"><h2>이력관리대장</h2><p class="small">작성 완료된 서식이 자동 누적됩니다. 최신순입니다.</p>
+<div class="toolbar no-print"><button onclick="exportHistory()">이력 Excel</button><button onclick="exportHistoryCSV()">이력 CSV</button><button class="danger" onclick="clearHistory()">전체 이력 삭제</button></div>
+<table><thead><tr><th>일자</th><th>서식</th><th>제목</th><th>핵심 위치·구역</th><th>현장명/공사명</th><th>공종</th><th>협력업체</th><th>담당자</th><th>완료시각</th></tr></thead><tbody>
+${history.map((r,i)=>`<tr><td>${r.date}</td><td>${r.form}</td><td>${r.title}</td><td>${r.location}</td><td>${r.site}</td><td>${r.work}</td><td>${r.contractor}</td><td>${r.manager}</td><td>${r.completedAt}</td></tr>`).join("")||`<tr><td colspan="9">등록된 이력이 없습니다.</td></tr>`}
+</tbody></table></div>`;
+}
+function historyRows(){return [["작성일","서식","제목","핵심 위치·구역","현장명/공사명","공종·작업","협력업체","담당자","완료시각"],...history.map(r=>[r.date,r.form,r.title,r.location,r.site,r.work,r.contractor,r.manager,r.completedAt])]}
+function exportHistoryCSV(){let rows=historyRows();download(new Blob(["\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"}),"안전관리_이력관리대장.csv")}
+function exportHistory(){let rows=historyRows(),html="<html><meta charset='UTF-8'><table border='1'>"+rows.map((r,i)=>"<tr>"+r.map(x=>`<${i?'td':'th'}>${String(x).replace(/</g,"&lt;")}</${i?'td':'th'}>`).join("")+"</tr>").join("")+"</table></html>";download(new Blob([html],{type:"application/vnd.ms-excel"}),"안전관리_이력관리대장.xls")}
+function clearHistory(){if(confirm("모든 이력을 삭제할까요?")){history=[];try{if(window.localStorage)localStorage.removeItem(STORAGE_KEY)}catch(e){}showHistory()}}
+function backup(){download(new Blob([JSON.stringify(history,null,2)],{type:"application/json"}),"안전관리_이력백업.json")}
+function restore(){let i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=e=>{let r=new FileReader();r.onload=()=>{try{history=JSON.parse(r.result);saveHistory();alert("복원 완료");showHistory()}catch(x){alert("백업파일 형식이 올바르지 않습니다.")}};r.readAsText(e.target.files[0])};i.click()}
+menu();render();
+try{
+  const isSafari=/Safari/i.test(navigator.userAgent)&&!/CriOS|FxiOS|EdgiOS/i.test(navigator.userAgent);
+  if(!isSafari) document.getElementById("browserNotice").style.display="block";
+}catch(e){}
+</script>
+
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+
+</body></html>
